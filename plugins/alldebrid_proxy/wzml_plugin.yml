@@ -1,0 +1,53 @@
+name: alldebrid_proxy
+version: "1.0.0"
+author: WZML-X
+description: Route AllDebrid API calls and downloads through a proxy, nothing else
+license: MIT
+repository: https://github.com/SilentDemonSD/WZML-X
+tags: [network, alldebrid, proxy]
+min_bot_version: "3.1.10"
+entry: alldebrid_proxy.py
+commands:
+  - name: adproxy
+    handler: adproxy_command
+    description: Show and test the AllDebrid proxy
+    usage: "/adproxy"
+    access: owner
+callbacks:
+  - pattern: "^adproxy"
+    handler: adproxy_callback
+    description: Test the proxy or refresh the panel
+    access: owner
+config_schema:
+  proxy_url:
+    type: string
+    default: ""
+    description: >-
+      Proxy for AllDebrid. http://user:pass@host:port, or socks5h://host:port
+      (SOCKS needs: pip install 'niquests[socks]'). Empty disables everything.
+  proxy_api:
+    type: boolean
+    default: true
+    description: Proxy the api.alldebrid.com calls (unlock, magnets, status)
+  proxy_downloads:
+    type: boolean
+    default: true
+    description: Proxy the file transfer itself, via aria2 all-proxy
+  download_proxy_url:
+    type: string
+    default: ""
+    description: >-
+      Separate proxy for downloads. Defaults to proxy_url. Must be http/https --
+      aria2 cannot do SOCKS. Set this if proxy_url is a SOCKS proxy.
+  extra_hosts:
+    type: list
+    default: []
+    description: Extra domains to treat as AllDebrid, comma separated
+  learn_hosts:
+    type: boolean
+    default: true
+    description: Learn AllDebrid's delivery hosts from API replies automatically
+  verbose:
+    type: boolean
+    default: false
+    description: Log every request that gets proxied
