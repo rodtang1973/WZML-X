@@ -1,5 +1,5 @@
 name: alldebrid_proxy
-version: "1.0.0"
+version: "1.0.1"
 author: WZML-X
 description: Route AllDebrid API calls and downloads through a proxy, nothing else
 license: MIT
@@ -12,12 +12,12 @@ commands:
     handler: adproxy_command
     description: Show and test the AllDebrid proxy
     usage: "/adproxy"
-    access: owner
+    access: sudo
 callbacks:
   - pattern: "^adproxy"
     handler: adproxy_callback
     description: Test the proxy or refresh the panel
-    access: owner
+    access: sudo
 config_schema:
   proxy_url:
     type: string

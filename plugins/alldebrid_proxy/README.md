@@ -75,8 +75,9 @@ lives in memory only, and is visible on `/adproxy`.
 
 ## `/adproxy`
 
-Owner only. Shows the resolved proxy (password masked), which layers are live, the host
-sets, and any configuration problem. **Test** sends a request to AllDebrid through the
+Owner and sudo users. Shows the resolved proxy (password masked), which layers are
+live, the host sets, and any configuration problem. Changing the settings in
+`/plugins` stays owner-only — that gate is the bot's, not this plugin's. **Test** sends a request to AllDebrid through the
 proxy and reports reachability, whether your API key authenticates from that egress IP,
 the round-trip time, and the egress IP itself.
 

@@ -30,12 +30,19 @@ _TEST_URL = "https://api.alldebrid.com/v4/user"
 _IP_URL = "https://api.ipify.org"
 
 
+# Set in on_load. The manager only puts the record into `records` *after*
+# on_load returns, so effective_config() is empty while we are loading and
+# we have to read the settings off the instance instead.
+_plugin = None
+
+
 def _config():
     try:
-        return get_plugin_manager().effective_config(PLUGIN) or {}
+        if config := get_plugin_manager().effective_config(PLUGIN):
+            return config
     except Exception as err:
         LOGGER.error(f"{PLUGIN}: could not read settings: {err}")
-        return {}
+    return dict(getattr(_plugin, "config", None) or {})
 
 
 def _fallback_url():
@@ -206,6 +213,8 @@ async def adproxy_callback(_, query):
 
 class AllDebridProxyPlugin(PluginBase):
     async def on_load(self):
+        global _plugin
+        _plugin = self
         _apply()
         install()
         LOGGER.info(
@@ -214,11 +223,15 @@ class AllDebridProxyPlugin(PluginBase):
         return True
 
     async def on_unload(self):
+        global _plugin
         remove()
+        _plugin = None
         LOGGER.info(f"{PLUGIN}: detached")
         return True
 
     async def on_enable(self):
+        global _plugin
+        _plugin = self
         _apply()
         install()
         return True
