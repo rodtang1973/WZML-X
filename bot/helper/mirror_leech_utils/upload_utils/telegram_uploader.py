@@ -24,6 +24,7 @@ from pyrogram.types import (
     InputMediaDocument,
     InputMediaPhoto,
     InputMediaVideo,
+    LinkPreviewOptions,
     ReplyParameters,
 )
 
@@ -35,18 +36,10 @@ from ...ext_utils.status_utils import get_readable_file_size, get_readable_time
 
 from ...ext_utils.media_utils import get_md5_hash, get_media_info
 from ...telegram_helper.message_utils import delete_message
+from ...telegram_helper.tg_copy import call_with_flood_retry as _call_with_flood_retry
 from ...ext_utils.hyperul_utils import HypertgUpload
 
 LOGGER = getLogger(__name__)
-
-
-async def _call_with_flood_retry(method, *args, **kwargs):
-    while True:
-        try:
-            return await method(*args, **kwargs)
-        except (FloodWait, FloodPremiumWait) as f:
-            LOGGER.warning(f"FloodWait {f.value}s, retrying {method.__name__}")
-            await sleep(f.value + 1)
 
 
 class TelegramUploader:
@@ -115,7 +108,7 @@ class TelegramUploader:
                         self._listener.client.send_message,
                         chat_id=self._listener.message.chat.id,
                         text="Deleted Cmd Message! Don't delete the cmd message again!",
-                        disable_web_page_preview=True,
+                        link_preview_options=LinkPreviewOptions(is_disabled=True),
                         disable_notification=True,
                     )
                 except Exception:
@@ -324,8 +317,10 @@ class TelegramUploader:
                     chat_id=self._listener.user_id,
                     from_chat_id=self._sent_msg.chat.id,
                     message_id=self._sent_msg.id,
-                    reply_to_message_id=(
-                        self._listener.pm_msg.id if self._listener.pm_msg else None
+                    reply_parameters=(
+                        ReplyParameters(message_id=self._listener.pm_msg.id)
+                        if self._listener.pm_msg
+                        else None
                     ),
                 )
         except Exception as err:
@@ -398,8 +393,10 @@ class TelegramUploader:
                         chat_id=self._listener.user_id,
                         from_chat_id=copy_from_chat,
                         message_id=copy_from_msg,
-                        reply_to_message_id=(
-                            self._listener.pm_msg.id if self._listener.pm_msg else None
+                        reply_parameters=(
+                            ReplyParameters(message_id=self._listener.pm_msg.id)
+                            if self._listener.pm_msg
+                            else None
                         ),
                     )
                 except Exception as err:
@@ -411,19 +408,15 @@ class TelegramUploader:
                             )
                         else:
                             LOGGER.error(f"Failed To Send in BotPM:\n{err_msg}")
-            for dest_attr, thread_attr in (
-                ("cmd_up_dest", "cmd_thread_id"),
-                ("leech_dest", "leech_thread_id"),
-            ):
-                dest = getattr(self._listener, dest_attr, None)
-                if not dest:
+            extras = [
+                (self._listener.cmd_up_dest, self._listener.cmd_thread_id),
+                *getattr(self._listener, "leech_dests", ()),
+            ]
+            done = {(self._listener.up_dest, self._listener.chat_thread_id)}
+            for dest, thread_id in extras:
+                if not dest or (dest, thread_id) in done:
                     continue
-                thread_id = getattr(self._listener, thread_attr, None)
-                if (
-                    dest == self._listener.up_dest
-                    and thread_id == self._listener.chat_thread_id
-                ):
-                    continue
+                done.add((dest, thread_id))
                 try:
                     await _call_with_flood_retry(
                         TgClient.bot.copy_message,
@@ -434,7 +427,7 @@ class TelegramUploader:
                     )
                 except Exception as e:
                     if not self._listener.is_cancelled:
-                        LOGGER.error(f"Failed to forward to {dest_attr}: {e}")
+                        LOGGER.error(f"Failed to forward to {dest}: {e}")
 
     async def _upload_file_task(self, file_, f_path, dirpath, user_session, seq_idx):
         up_path = None
@@ -601,7 +594,7 @@ class TelegramUploader:
                 file_path=o_path,
                 cap_mono=cap_mono,
                 reply_target=self._sent_msg,
-                reply_to_message_id=self._sent_msg.id,
+                reply_msg_id=self._sent_msg.id,
                 force_document=force_document,
                 user_session=user_session,
                 user_thumb=self._thumb,
