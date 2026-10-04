@@ -1,5 +1,5 @@
 name: alldebrid_proxy
-version: "1.0.1"
+version: "1.0.2"
 author: WZML-X
 description: Route AllDebrid API calls and downloads through a proxy, nothing else
 license: MIT

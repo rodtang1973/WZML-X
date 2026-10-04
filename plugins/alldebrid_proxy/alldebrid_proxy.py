@@ -147,7 +147,9 @@ async def _run_test():
         response = await _probe(
             _TEST_URL,
             proxies,
-            params={"agent": "wzmlx", "apikey": (Config.ALLDEBRID_API_KEY or "").strip()},
+            headers={
+                "Authorization": f"Bearer {(Config.ALLDEBRID_API_KEY or '').strip()}"
+            },
         )
         elapsed = int((monotonic() - started) * 1000)
         payload = response.json()
